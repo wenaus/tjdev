@@ -1,5 +1,5 @@
 #!/bin/env python
-import os, time, traceback
+import os, time, traceback, sys
 from datetime import datetime, timedelta
 import cx_Oracle
 
@@ -16,6 +16,8 @@ secretkey = os.environ['AWS_SECRET_KEY_ATLAS']
 dyndb = DynamoDBConnection(aws_access_key_id=keyid, aws_secret_access_key=secretkey)
 
 usertable = Table('user', connection=dyndb)
+projecttable = Table('project', connection=dyndb)
+requesttable = Table('request', connection=dyndb)
 
 ## Panda
 db = 'ADCR_PANDAMON'
@@ -91,13 +93,48 @@ print len(rows), 'users in last', days, 'days'
 query = "select * from ATLAS_DEFT.T_PRODMANAGER_REQUEST"
 deftcursor.execute(query)
 rows = fetchdict(deftcursor)
+fields = [ 'status', 'project', 'locked', 'description', 'campaign', 'energy_gev', 'provenance', 'manager', 'reference_link', 'request_type', 'phys_group', ]
 for row in rows:
+    print row['PR_ID'], row['MANAGER'], row['DESCRIPTION']
     print row
+    if True:
+        try:
+            item = requesttable.get_item(reqid=row['PR_ID'])
+            for f in fields:
+                if row[f.upper()]: item[f] = row[f.upper()]
+            item.save(overwrite=True)
+        except boto.dynamodb2.exceptions.ItemNotFound:
+            datadict = { 'reqid' : row['PR_ID'], 'description' : row['DESCRIPTION'] }
+            print 'New request', row['PR_ID']
+            requesttable.put_item(data=datadict,overwrite=True)
+        except:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_exception(exc_type, exc_value, exc_traceback)
 
+print row.keys()
+
+sys.exit()
 
 query = "select * from ATLAS_DEFT.T_PROJECTS"
 deftcursor.execute(query)
 rows = fetchdict(deftcursor)
 for row in rows:
+    print row['PROJECT'], row['DESCRIPTION']
     print row
+    if True:
+        try:
+            item = projecttable.get_item(project=row['PROJECT'])
+            if row['DESCRIPTION']: item['description'] = row['DESCRIPTION']
+            if row['STATUS']: item['status'] = row['STATUS']
+            if row['TIMESTAMP']: item['timestamp'] = row['TIMESTAMP']
+            item.save(overwrite=True)
+        except boto.dynamodb2.exceptions.ItemNotFound:
+            datadict = { 'project' : row['PROJECT'], 'description' : row['DESCRIPTION'] }
+            print 'New project', row['PROJECT']
+            projecttable.put_item(data=datadict,overwrite=True)
+        except:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_exception(exc_type, exc_value, exc_traceback)
+
+print row.keys()
 
