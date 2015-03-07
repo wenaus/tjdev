@@ -104,7 +104,9 @@ for row in rows:
                 if row[f.upper()]: item[f] = row[f.upper()]
             item.save(overwrite=True)
         except boto.dynamodb2.exceptions.ItemNotFound:
-            datadict = { 'reqid' : row['PR_ID'], 'description' : row['DESCRIPTION'] }
+            datadict = { 'reqid' : row['PR_ID'] }
+            for f in fields:
+                datadict[f] = row[f.upper()]
             print 'New request', row['PR_ID']
             requesttable.put_item(data=datadict,overwrite=True)
         except:
