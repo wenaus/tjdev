@@ -17,17 +17,24 @@ dyndb = DynamoDBConnection(aws_access_key_id=keyid, aws_secret_access_key=secret
 
 usertable = Table('user', connection=dyndb)
 
+## Panda
 db = 'ADCR_PANDAMON'
-dbid = 'ATLAS_PANDAARCH'
 dbuser = 'ATLAS_PANDAMON_READER'
 dbpwd = os.environ[dbuser]
 connect=cx_Oracle.connect(dbuser,dbpwd,db)
 cursor=connect.cursor()
 
-def fetchdict():
-    desc = cursor.description
+## DEFT
+db = 'ADCR_PANDAMON'
+dbuser = 'ATLAS_DEFT_R'
+dbpwd = os.environ[dbuser]
+deftconnect=cx_Oracle.connect(dbuser,dbpwd,db)
+deftcursor=deftconnect.cursor()
+
+def fetchdict(localcursor):
+    desc = localcursor.description
     rdlist = []
-    for r in cursor:
+    for r in localcursor:
         rdict = {}
         i = 0
         for col in r:
@@ -43,7 +50,7 @@ def fetchdict():
 query = "select MAX(PANDAID) from ATLAS_PANDA.JOBSARCHIVED4"
 print query
 cursor.execute(query)
-rows = fetchdict()
+rows = fetchdict(cursor)
 pandaid = rows[0]['MAX(PANDAID)']
 print pandaid
 
@@ -55,7 +62,7 @@ t1 = datetime.utcnow() - timedelta(days)
 valdict = { 'tstart' : t1 }
 cursor.arraysize=10000
 cursor.execute(query, valdict)
-rows = fetchdict()
+rows = fetchdict(cursor)
 #with usertable.batch_write() as batch:
 if True:
     batch = usertable
@@ -80,3 +87,17 @@ if True:
             traceback.print_tb(exc_traceback)
 
 print len(rows), 'users in last', days, 'days'
+
+query = "select * from ATLAS_DEFT.T_PRODMANAGER_REQUEST"
+deftcursor.execute(query)
+rows = fetchdict(deftcursor)
+for row in rows:
+    print row
+
+
+query = "select * from ATLAS_DEFT.T_PROJECTS"
+deftcursor.execute(query)
+rows = fetchdict(deftcursor)
+for row in rows:
+    print row
+

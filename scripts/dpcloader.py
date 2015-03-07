@@ -68,7 +68,7 @@ else:
 ## project table
 if 'project' not in tables['TableNames']:
     projecttable = Table.create('project',
-                         schema=[HashKey('project'), RangeKey('taskname'), ],
+                         schema=HashKey('project'),
                          throughput={ 'read': 5, 'write': 5 },
                          indexes=[ AllIndex('EverythingIndex', parts=[ HashKey('project'), RangeKey('modificationtime'), ]), ],
                          connection=conn,
